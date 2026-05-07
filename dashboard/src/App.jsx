@@ -62,8 +62,8 @@ function Dashboard() {
 
   const latestData = summary?.[0]
   const title = view === 'medical'
-    ? `Medicare Enrollment for ${latestData?.MONTH || ''} ${latestData?.YEAR || ''}`
-    : `Enrollment Counts for ${latestData?.MONTH || ''} ${latestData?.YEAR || ''}`
+    ? `📊 CMS Medicare Enrollment for ${latestData?.MONTH || ''} ${latestData?.YEAR || ''}`
+    : `📊 CMS Enrollment Counts for ${latestData?.MONTH || ''} ${latestData?.YEAR || ''}`
 
   return (
     <div className="dashboard">
