@@ -141,3 +141,12 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+
+data/
+
+docs\prompts
+docs/prompts
+
+# DuckDB public assets (copied from node_modules)
+dashboard/public/duckdb/
