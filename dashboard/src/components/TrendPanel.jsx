@@ -1,4 +1,7 @@
-import ReactECharts from 'echarts-for-react'
+import { useState } from 'react'
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card'
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { TrendingUp } from 'lucide-react'
 
 function formatAxis(val) {
   if (val >= 1e6) return (val / 1e6).toFixed(0) + 'M'
@@ -6,69 +9,93 @@ function formatAxis(val) {
   return val
 }
 
-export default function TrendPanel({ view, trendTab, setTrendTab, yearlyTrend, monthlyTrend, selectedState }) {
-  const areaLabel = selectedState || 'All Areas'
-  const data = trendTab === 'yearly' ? yearlyTrend : monthlyTrend?.slice().reverse()
-
+export default function TrendPanel({ view, yearlyTrend, monthlyTrend, selectedState }) {
+  const [tab, setTab] = useState('yearly')
   const isMedical = view === 'medical'
   const cat1 = isMedical ? 'FFS' : 'PDP'
   const cat2 = isMedical ? 'MA' : 'MAPD'
-  const color1 = isMedical ? '#d64b8a' : '#2980b9'
-  const color2 = isMedical ? '#6b3fa0' : '#2d8f6f'
+  const color1 = '#ef4444'
+  const color2 = '#0ea5e9'
+  const areaLabel = selectedState || 'National'
 
-  const xLabels = data?.map(d => trendTab === 'yearly' ? d.YEAR : `${d.MONTH}/${d.YEAR?.slice(-2)}`) || []
-
-  const countOption = {
-    tooltip: { trigger: 'axis' },
-    grid: { left: 60, right: 20, top: 20, bottom: 30 },
-    xAxis: { type: 'category', data: xLabels, axisLabel: { fontSize: 10 } },
-    yAxis: { type: 'value', axisLabel: { formatter: formatAxis, fontSize: 10 } },
-    series: [
-      { name: 'TOTAL', type: 'line', data: data?.map(d => Number(d.TOTAL)) || [], lineStyle: { color: '#222', width: 2 }, itemStyle: { color: '#222' }, symbol: 'circle', symbolSize: 6 },
-      { name: cat1, type: 'line', data: data?.map(d => Number(d[cat1])) || [], lineStyle: { color: color1, width: 2 }, itemStyle: { color: color1 }, symbol: 'circle', symbolSize: 5 },
-      { name: cat2, type: 'line', data: data?.map(d => Number(d[cat2])) || [], lineStyle: { color: color2, width: 2 }, itemStyle: { color: color2 }, symbol: 'circle', symbolSize: 5 }
-    ]
-  }
-
-  const pctData = data?.map(d => {
-    const total = Number(d.TOTAL) || 1
-    return { pct1: (Number(d[cat1]) / total) * 100, pct2: (Number(d[cat2]) / total) * 100 }
-  }) || []
-
-  const pctOption = {
-    tooltip: { trigger: 'axis', formatter: (p) => p.map(s => `${s.seriesName}: ${s.value?.toFixed(0)}%`).join('<br/>') },
-    grid: { left: 50, right: 20, top: 20, bottom: 30 },
-    xAxis: { type: 'category', data: xLabels, axisLabel: { fontSize: 10 } },
-    yAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%', fontSize: 10 } },
-    series: [
-      { name: cat1, type: 'bar', stack: 'pct', data: pctData.map(d => d.pct1), itemStyle: { color: color1 }, barWidth: '60%' },
-      { name: cat2, type: 'bar', stack: 'pct', data: pctData.map(d => d.pct2), itemStyle: { color: color2 } }
-    ]
-  }
+  const rawData = tab === 'yearly' ? yearlyTrend : monthlyTrend?.slice().reverse()
+  const chartData = rawData?.map(d => ({
+    label: tab === 'yearly' ? d.YEAR : `${d.MONTH?.slice(0, 3)} ${d.YEAR?.slice(-2)}`,
+    total: Number(d.TOTAL) || 0,
+    cat1: Number(d[cat1]) || 0,
+    cat2: Number(d[cat2]) || 0,
+    pct1: Number(d.TOTAL) ? Math.round((Number(d[cat1]) / Number(d.TOTAL)) * 100) : 0,
+    pct2: Number(d.TOTAL) ? Math.round((Number(d[cat2]) / Number(d.TOTAL)) * 100) : 0
+  })) || []
 
   return (
-    <div className="trend-panel">
-      <div className="tab-bar">
-        <button className={trendTab === 'yearly' ? 'active' : ''} onClick={() => setTrendTab('yearly')}>Yearly Trend</button>
-        <button className={trendTab === 'monthly' ? 'active' : ''} onClick={() => setTrendTab('monthly')}>12-Month Trend</button>
-      </div>
-      <div className="trend-section">
-        <h3>Enrollment Count {trendTab === 'yearly' ? 'Yearly' : '12-Month'} Trend: {areaLabel}</h3>
-        <ReactECharts option={countOption} style={{ height: 220 }} opts={{ renderer: 'svg' }} />
-        <div className="legend">
-          <span className="legend-item"><span className="legend-dot" style={{ background: color1 }}></span>{cat1}</span>
-          <span className="legend-item"><span className="legend-dot" style={{ background: color2 }}></span>{cat2}</span>
-          <span className="legend-item"><span className="legend-dot" style={{ background: '#222' }}></span>TOTAL</span>
+    <Card className="border border-gray-200">
+      <CardHeader className="pb-4 border-b border-gray-100">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-3 text-gray-900">
+            <TrendingUp className="w-5 h-5 text-blue-600" />
+            Enrollment Trends · {areaLabel}
+          </CardTitle>
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+            <button
+              onClick={() => setTab('yearly')}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                tab === 'yearly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Yearly
+            </button>
+            <button
+              onClick={() => setTab('monthly')}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                tab === 'monthly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              12-Month
+            </button>
+          </div>
         </div>
-      </div>
-      <div className="trend-section">
-        <h3>Percent of Total Enrollment {trendTab === 'yearly' ? 'Yearly' : '12-Month'} Trend: {areaLabel}</h3>
-        <ReactECharts option={pctOption} style={{ height: 220 }} opts={{ renderer: 'svg' }} />
-        <div className="legend">
-          <span className="legend-item"><span className="legend-dot" style={{ background: color1 }}></span>{cat1}</span>
-          <span className="legend-item"><span className="legend-dot" style={{ background: color2 }}></span>{cat2}</span>
+      </CardHeader>
+      <CardContent className="pt-6 space-y-6">
+        {/* Line Chart */}
+        <div>
+          <p className="text-sm font-medium text-gray-700 mb-3">Enrollment Count</p>
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#737373' }} axisLine={{ stroke: '#d4d4d4' }} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: '#737373' }} tickFormatter={formatAxis} axisLine={false} tickLine={false} />
+              <Tooltip
+                formatter={(value, name) => [Number(value).toLocaleString(), name === 'total' ? 'Total' : name === 'cat1' ? cat1 : cat2]}
+                contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e5e5', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+              />
+              <Line type="monotone" dataKey="total" stroke="#171717" strokeWidth={2} dot={{ r: 3 }} name="total" />
+              <Line type="monotone" dataKey="cat1" stroke={color1} strokeWidth={2} dot={{ r: 3 }} name="cat1" />
+              <Line type="monotone" dataKey="cat2" stroke={color2} strokeWidth={2} dot={{ r: 3 }} name="cat2" />
+            </LineChart>
+          </ResponsiveContainer>
+          <div className="flex items-center justify-center gap-5 mt-2">
+            <span className="flex items-center gap-1.5 text-xs text-gray-600"><span className="w-3 h-0.5 bg-gray-900 rounded" />Total</span>
+            <span className="flex items-center gap-1.5 text-xs text-gray-600"><span className="w-3 h-0.5 rounded" style={{ background: color1 }} />{cat1}</span>
+            <span className="flex items-center gap-1.5 text-xs text-gray-600"><span className="w-3 h-0.5 rounded" style={{ background: color2 }} />{cat2}</span>
+          </div>
         </div>
-      </div>
-    </div>
+
+        {/* Stacked Bar Chart */}
+        <div>
+          <p className="text-sm font-medium text-gray-700 mb-3">Percent of Total</p>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#737373' }} axisLine={{ stroke: '#d4d4d4' }} tickLine={false} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#737373' }} tickFormatter={v => `${v}%`} axisLine={false} tickLine={false} />
+              <Tooltip formatter={(value) => [`${value}%`]} contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e5e5', borderRadius: '8px' }} />
+              <Bar dataKey="pct1" stackId="pct" fill={color1} radius={[0, 0, 0, 0]} name={cat1} />
+              <Bar dataKey="pct2" stackId="pct" fill={color2} radius={[4, 4, 0, 0]} name={cat2} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
