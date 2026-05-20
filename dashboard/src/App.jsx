@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
+import { Analytics } from '@vercel/analytics/react'
 import * as dataService from './services/dataService'
 import Header from './components/Header'
 import SummaryMetrics from './components/SummaryMetrics'
@@ -107,6 +108,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Dashboard />
+      <Analytics />
     </QueryClientProvider>
   )
 }
