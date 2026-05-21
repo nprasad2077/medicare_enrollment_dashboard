@@ -101,7 +101,7 @@ export default function MapPanel({ view, stateData, selectedState, onStateClick 
               url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
               attribution='&copy; OpenStreetMap, &copy; CARTO'
             />
-            {geoData && <GeoJSON key={`${view}-${selectedState}`} data={geoData} style={style} onEachFeature={onEachFeature} />}
+            {geoData && <GeoJSON key={`${view}-${selectedState}-${stateData?.length}`} data={geoData} style={style} onEachFeature={onEachFeature} />}
           </MapContainer>
 
           {/* Legend */}
