@@ -115,3 +115,37 @@ export async function getCountyData(view, state) {
     return { county: r.BENE_COUNTY_DESC, fips: r.BENE_FIPS_CD, TOTAL: num(r.PRSCRPTN_DRUG_TOT_BENES), PDP: num(r.PRSCRPTN_DRUG_PDP_BENES), MAPD: num(r.PRSCRPTN_DRUG_MAPD_BENES) };
   }).sort((a, b) => a.county.localeCompare(b.county));
 }
+
+
+export async function getCountyYearlyTrend(view, state, county) {
+  const data = await fetchAPI({
+    'filter[BENE_GEO_LVL]': 'County',
+    'filter[BENE_STATE_ABRVTN]': state,
+    'filter[BENE_COUNTY_DESC]': county,
+    size: 5000
+  });
+  const yearly = data.filter(r => r.MONTH === 'Year');
+  return yearly.map(r => {
+    if (view === 'medical') {
+      return { YEAR: r.YEAR, TOTAL: num(r.TOT_BENES), FFS: num(r.ORGNL_MDCR_BENES), MA: num(r.MA_AND_OTH_BENES) };
+    }
+    return { YEAR: r.YEAR, TOTAL: num(r.PRSCRPTN_DRUG_TOT_BENES), PDP: num(r.PRSCRPTN_DRUG_PDP_BENES), MAPD: num(r.PRSCRPTN_DRUG_MAPD_BENES) };
+  }).sort((a, b) => a.YEAR.localeCompare(b.YEAR));
+}
+
+export async function getCountyMonthlyTrend(view, state, county) {
+  const data = await fetchAPI({
+    'filter[BENE_GEO_LVL]': 'County',
+    'filter[BENE_STATE_ABRVTN]': state,
+    'filter[BENE_COUNTY_DESC]': county,
+    size: 5000
+  });
+  const monthly = data.filter(r => r.MONTH !== 'Year');
+  monthly.sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
+  return monthly.slice(0, 12).map(r => {
+    if (view === 'medical') {
+      return { YEAR: r.YEAR, MONTH: r.MONTH, TOTAL: num(r.TOT_BENES), FFS: num(r.ORGNL_MDCR_BENES), MA: num(r.MA_AND_OTH_BENES) };
+    }
+    return { YEAR: r.YEAR, MONTH: r.MONTH, TOTAL: num(r.PRSCRPTN_DRUG_TOT_BENES), PDP: num(r.PRSCRPTN_DRUG_PDP_BENES), MAPD: num(r.PRSCRPTN_DRUG_MAPD_BENES) };
+  });
+}

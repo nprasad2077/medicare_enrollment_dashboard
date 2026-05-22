@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card'
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp } from 'lucide-react'
 
 function formatAxis(val) {
@@ -9,14 +9,14 @@ function formatAxis(val) {
   return val
 }
 
-export default function TrendPanel({ view, yearlyTrend, monthlyTrend, selectedState }) {
+export default function TrendPanel({ view, yearlyTrend, monthlyTrend, selectedState, selectedCounty, trendLabel }) {
   const [tab, setTab] = useState('yearly')
   const isMedical = view === 'medical'
   const cat1 = isMedical ? 'FFS' : 'PDP'
   const cat2 = isMedical ? 'MA' : 'MAPD'
   const color1 = '#ef4444'
   const color2 = '#0ea5e9'
-  const areaLabel = selectedState || 'National'
+  const areaLabel = trendLabel || selectedState || 'National'
 
   const rawData = tab === 'yearly' ? yearlyTrend : monthlyTrend?.slice().reverse()
   const chartData = rawData?.map(d => ({
@@ -24,6 +24,26 @@ export default function TrendPanel({ view, yearlyTrend, monthlyTrend, selectedSt
     total: Number(d.TOTAL) || 0,
     cat1: Number(d[cat1]) || 0,
     cat2: Number(d[cat2]) || 0,
+    pct1: Number(d.TOTAL) ? Math.round((Number(d[cat1]) / Number(d.TOTAL)) * 100) : 0,
+    pct2: Number(d.TOTAL) ? Math.round((Number(d[cat2]) / Number(d.TOTAL)) * 100) : 0
+  })) || []
+
+  // Grid data for tables
+  const yearlyGridData = yearlyTrend?.map(d => ({
+    year: d.YEAR,
+    total: Number(d.TOTAL) || 0,
+    c1: Number(d[cat1]) || 0,
+    c2: Number(d[cat2]) || 0,
+    pct1: Number(d.TOTAL) ? Math.round((Number(d[cat1]) / Number(d.TOTAL)) * 100) : 0,
+    pct2: Number(d.TOTAL) ? Math.round((Number(d[cat2]) / Number(d.TOTAL)) * 100) : 0
+  })) || []
+
+  const monthlyGridData = monthlyTrend?.slice().reverse().map(d => ({
+    year: d.YEAR,
+    month: d.MONTH,
+    total: Number(d.TOTAL) || 0,
+    c1: Number(d[cat1]) || 0,
+    c2: Number(d[cat2]) || 0,
     pct1: Number(d.TOTAL) ? Math.round((Number(d[cat1]) / Number(d.TOTAL)) * 100) : 0,
     pct2: Number(d.TOTAL) ? Math.round((Number(d[cat2]) / Number(d.TOTAL)) * 100) : 0
   })) || []
@@ -43,7 +63,7 @@ export default function TrendPanel({ view, yearlyTrend, monthlyTrend, selectedSt
                 tab === 'yearly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Yearly
+              Yearly Trend
             </button>
             <button
               onClick={() => setTab('monthly')}
@@ -51,50 +71,130 @@ export default function TrendPanel({ view, yearlyTrend, monthlyTrend, selectedSt
                 tab === 'monthly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              12-Month
+              12-Month Trend
             </button>
+            {selectedCounty && (
+              <button
+                onClick={() => setTab('grid')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  tab === 'grid' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Grid
+              </button>
+            )}
           </div>
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
-        {/* Line Chart */}
-        <div>
-          <p className="text-sm font-medium text-gray-700 mb-3">Enrollment Count</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#737373' }} axisLine={{ stroke: '#d4d4d4' }} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#737373' }} tickFormatter={formatAxis} axisLine={false} tickLine={false} />
-              <Tooltip
-                formatter={(value, name) => [Number(value).toLocaleString(), name === 'total' ? 'Total' : name === 'cat1' ? cat1 : cat2]}
-                contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e5e5', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-              />
-              <Line type="monotone" dataKey="total" stroke="#171717" strokeWidth={2} dot={{ r: 3 }} name="total" />
-              <Line type="monotone" dataKey="cat1" stroke={color1} strokeWidth={2} dot={{ r: 3 }} name="cat1" />
-              <Line type="monotone" dataKey="cat2" stroke={color2} strokeWidth={2} dot={{ r: 3 }} name="cat2" />
-            </LineChart>
-          </ResponsiveContainer>
-          <div className="flex items-center justify-center gap-5 mt-2">
-            <span className="flex items-center gap-1.5 text-xs text-gray-600"><span className="w-3 h-0.5 bg-gray-900 rounded" />Total</span>
-            <span className="flex items-center gap-1.5 text-xs text-gray-600"><span className="w-3 h-0.5 rounded" style={{ background: color1 }} />{cat1}</span>
-            <span className="flex items-center gap-1.5 text-xs text-gray-600"><span className="w-3 h-0.5 rounded" style={{ background: color2 }} />{cat2}</span>
-          </div>
-        </div>
+        {tab === 'grid' ? (
+          <>
+            {/* Yearly Grid */}
+            <div>
+              <p className="text-sm font-semibold text-gray-800 mb-2">Enrollment Count Yearly Trend: {areaLabel}</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="text-left py-2 px-3 font-medium text-gray-600">Year</th>
+                      <th className="text-right py-2 px-3 font-medium text-gray-600">TOTAL</th>
+                      <th className="text-right py-2 px-3 font-medium text-gray-600">{cat1}</th>
+                      <th className="text-right py-2 px-3 font-medium text-gray-600">{cat2}</th>
+                      <th className="text-right py-2 px-3 font-medium text-gray-600">{cat1} %</th>
+                      <th className="text-right py-2 px-3 font-medium text-gray-600">{cat2} %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {yearlyGridData.map(r => (
+                      <tr key={r.year} className="border-b border-gray-50">
+                        <td className="py-1.5 px-3 text-gray-900">{r.year}</td>
+                        <td className="text-right py-1.5 px-3 text-gray-700">{r.total.toLocaleString()}</td>
+                        <td className="text-right py-1.5 px-3 text-gray-700">{r.c1.toLocaleString()}</td>
+                        <td className="text-right py-1.5 px-3 text-gray-700">{r.c2.toLocaleString()}</td>
+                        <td className="text-right py-1.5 px-3 text-gray-700">{r.pct1}%</td>
+                        <td className="text-right py-1.5 px-3 text-gray-700">{r.pct2}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-        {/* Stacked Bar Chart */}
-        <div>
-          <p className="text-sm font-medium text-gray-700 mb-3">Percent of Total</p>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#737373' }} axisLine={{ stroke: '#d4d4d4' }} tickLine={false} />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#737373' }} tickFormatter={v => `${v}%`} axisLine={false} tickLine={false} />
-              <Tooltip formatter={(value) => [`${value}%`]} contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e5e5', borderRadius: '8px' }} />
-              <Bar dataKey="pct1" stackId="pct" fill={color1} radius={[0, 0, 0, 0]} name={cat1} />
-              <Bar dataKey="pct2" stackId="pct" fill={color2} radius={[4, 4, 0, 0]} name={cat2} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+            {/* Monthly Grid */}
+            <div>
+              <p className="text-sm font-semibold text-gray-800 mb-2">Enrollment Count 12-Month Trend: {areaLabel}</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="text-left py-2 px-3 font-medium text-gray-600">Year</th>
+                      <th className="text-left py-2 px-3 font-medium text-gray-600">Month</th>
+                      <th className="text-right py-2 px-3 font-medium text-gray-600">TOTAL</th>
+                      <th className="text-right py-2 px-3 font-medium text-gray-600">{cat1}</th>
+                      <th className="text-right py-2 px-3 font-medium text-gray-600">{cat2}</th>
+                      <th className="text-right py-2 px-3 font-medium text-gray-600">{cat1} %</th>
+                      <th className="text-right py-2 px-3 font-medium text-gray-600">{cat2} %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthlyGridData.map(r => (
+                      <tr key={`${r.year}-${r.month}`} className="border-b border-gray-50">
+                        <td className="py-1.5 px-3 text-gray-900">{r.year}</td>
+                        <td className="py-1.5 px-3 text-gray-700">{r.month}</td>
+                        <td className="text-right py-1.5 px-3 text-gray-700">{r.total.toLocaleString()}</td>
+                        <td className="text-right py-1.5 px-3 text-gray-700">{r.c1.toLocaleString()}</td>
+                        <td className="text-right py-1.5 px-3 text-gray-700">{r.c2.toLocaleString()}</td>
+                        <td className="text-right py-1.5 px-3 text-gray-700">{r.pct1}%</td>
+                        <td className="text-right py-1.5 px-3 text-gray-700">{r.pct2}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Line Chart */}
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-3">Enrollment Count</p>
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#737373' }} axisLine={{ stroke: '#d4d4d4' }} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#737373' }} tickFormatter={formatAxis} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    formatter={(value, name) => [Number(value).toLocaleString(), name === 'total' ? 'Total' : name === 'cat1' ? cat1 : cat2]}
+                    contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e5e5', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Line type="monotone" dataKey="total" stroke="#171717" strokeWidth={2} dot={{ r: 3 }} name="total" />
+                  <Line type="monotone" dataKey="cat1" stroke={color1} strokeWidth={2} dot={{ r: 3 }} name="cat1" />
+                  <Line type="monotone" dataKey="cat2" stroke={color2} strokeWidth={2} dot={{ r: 3 }} name="cat2" />
+                </LineChart>
+              </ResponsiveContainer>
+              <div className="flex items-center justify-center gap-5 mt-2">
+                <span className="flex items-center gap-1.5 text-xs text-gray-600"><span className="w-3 h-0.5 bg-gray-900 rounded" />Total</span>
+                <span className="flex items-center gap-1.5 text-xs text-gray-600"><span className="w-3 h-0.5 rounded" style={{ background: color1 }} />{cat1}</span>
+                <span className="flex items-center gap-1.5 text-xs text-gray-600"><span className="w-3 h-0.5 rounded" style={{ background: color2 }} />{cat2}</span>
+              </div>
+            </div>
+
+            {/* Stacked Bar Chart */}
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-3">Percent of Total</p>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#737373' }} axisLine={{ stroke: '#d4d4d4' }} tickLine={false} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#737373' }} tickFormatter={v => `${v}%`} axisLine={false} tickLine={false} />
+                  <Tooltip formatter={(value) => [`${value}%`]} contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e5e5', borderRadius: '8px' }} />
+                  <Bar dataKey="pct1" stackId="pct" fill={color1} radius={[0, 0, 0, 0]} name={cat1} />
+                  <Bar dataKey="pct2" stackId="pct" fill={color2} radius={[4, 4, 0, 0]} name={cat2} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   )

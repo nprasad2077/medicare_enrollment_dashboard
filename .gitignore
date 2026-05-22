@@ -150,3 +150,11 @@ docs/prompts
 
 # DuckDB public assets (copied from node_modules)
 dashboard/public/duckdb/
+
+docs\kiro-session.md
+docs\chat.json
+
+docs/kiro-session.md
+docs/chat.json
+
+data/Medicare Monthly Enrollment/2026-05/update dashboard

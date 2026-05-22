@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card'
-import { MapPin, X, ChevronRight, BarChart3 } from 'lucide-react'
+import { MapPin, X, BarChart3 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
 function formatNum(n) {
@@ -10,12 +10,10 @@ function formatNum(n) {
   return n.toLocaleString()
 }
 
-export default function StateDetail({ view, state, stateData, countyData, yearlyTrend, onClose }) {
+export default function StateDetail({ view, state, stateData, countyData, selectedCounty, onCountyClick, yearlyTrend, onClose }) {
   const isMedical = view === 'medical'
   const cat1 = isMedical ? 'MA' : 'MAPD'
   const cat2 = isMedical ? 'FFS' : 'PDP'
-  const color1 = '#0ea5e9'
-  const color2 = '#ef4444'
 
   const stateInfo = stateData?.find(s => s.state === state)
 
@@ -30,7 +28,8 @@ export default function StateDetail({ view, state, stateData, countyData, yearly
         total: t,
         val1: c1,
         val2: c2,
-        pct1: t ? Math.round((c1 / t) * 100) : 0
+        pct1: t ? Math.round((c1 / t) * 100) : 0,
+        pct2: t ? Math.round((c2 / t) * 100) : 0
       }
     }).sort((a, b) => b.total - a.total)
   }, [countyData, cat1, cat2])
@@ -39,10 +38,10 @@ export default function StateDetail({ view, state, stateData, countyData, yearly
   const topStates = useMemo(() => {
     if (!stateData) return []
     return stateData
-      .map(s => ({ name: s.state, total: Number(s.TOTAL) || 0, pct: Number(s.TOTAL) ? Math.round((Number(s[cat1]) / Number(s.TOTAL)) * 100) : 0 }))
+      .map(s => ({ name: s.state, total: Number(s.TOTAL) || 0 }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 10)
-  }, [stateData, cat1])
+  }, [stateData])
 
   // No state selected - show overview
   if (!state) {
@@ -73,83 +72,81 @@ export default function StateDetail({ view, state, stateData, countyData, yearly
     )
   }
 
-  // State selected - show detail
+  // State selected - show detail with county table
   const total = stateInfo ? Number(stateInfo.TOTAL) : 0
   const v1 = stateInfo ? Number(stateInfo[cat1]) : 0
   const v2 = stateInfo ? Number(stateInfo[cat2]) : 0
   const pct1 = total ? Math.round((v1 / total) * 100) : 0
+  const pct2 = total ? Math.round((v2 / total) * 100) : 0
 
   return (
-    <Card className="border border-gray-200">
-      <CardHeader className="pb-4 border-b border-gray-100">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-3 text-gray-900">
-            <MapPin className="w-5 h-5 text-violet-600" />
+    <div className="space-y-0">
+      {/* Dark blue state banner */}
+      <div className="bg-[#1e3a5f] text-white rounded-t-xl px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 flex-wrap text-sm">
+          <span className="font-bold">{stateInfo?.name?.toUpperCase() || state}</span>
+          <span className="text-gray-300">({countyRows.length} counties)</span>
+          <span className="text-gray-400">|</span>
+          <span>TOTAL: {total.toLocaleString()}</span>
+          <span className="text-gray-400">|</span>
+          <span>{cat2}: {v2.toLocaleString()} ({pct2}% of total)</span>
+          <span className="text-gray-400">|</span>
+          <span>{cat1}: {v1.toLocaleString()} ({pct1}% of total)</span>
+        </div>
+        <button
+          onClick={onClose}
+          className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/20 transition-colors shrink-0"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* County data table */}
+      <Card className="border border-gray-200 rounded-t-none">
+        <CardHeader className="pb-2 border-b border-gray-100">
+          <CardTitle className="flex items-center gap-3 text-gray-900 text-sm">
+            <MapPin className="w-4 h-4 text-violet-600" />
             {stateInfo?.name || state}
           </CardTitle>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <X className="w-4 h-4 text-gray-500" />
-          </button>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-4 space-y-5">
-        {/* State Summary */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <p className="text-lg font-semibold text-gray-900">{formatNum(total)}</p>
-            <p className="text-xs text-gray-500">Total</p>
+        </CardHeader>
+        <CardContent className="pt-2 px-0">
+          <div className="max-h-[500px] overflow-y-auto">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-gray-50 z-10">
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-2 px-3 font-medium text-gray-600">County</th>
+                  <th className="text-right py-2 px-3 font-medium text-gray-600">TOTAL</th>
+                  <th className="text-right py-2 px-3 font-medium text-gray-600">{cat2}</th>
+                  <th className="text-right py-2 px-3 font-medium text-gray-600">{cat1}</th>
+                  <th className="text-right py-2 px-3 font-medium text-gray-600">{cat2}%</th>
+                  <th className="text-right py-2 px-3 font-medium text-gray-600">{cat1}%</th>
+                </tr>
+              </thead>
+              <tbody>
+                {countyRows.map(row => (
+                  <tr
+                    key={row.county}
+                    onClick={() => onCountyClick(row.county)}
+                    className={`border-b border-gray-50 cursor-pointer transition-colors hover:bg-blue-50 ${
+                      selectedCounty === row.county ? 'bg-blue-50 ring-2 ring-blue-400 ring-inset' : ''
+                    }`}
+                  >
+                    <td className="py-2 px-3 font-medium text-gray-900">{row.county}</td>
+                    <td className="text-right py-2 px-3 text-gray-700">{row.total.toLocaleString()}</td>
+                    <td className="text-right py-2 px-3 text-gray-700">{row.val2.toLocaleString()}</td>
+                    <td className="text-right py-2 px-3 text-gray-700">{row.val1.toLocaleString()}</td>
+                    <td className="text-right py-2 px-3 text-gray-700">{row.pct2}%</td>
+                    <td className="text-right py-2 px-3 text-gray-700">{row.pct1}%</td>
+                  </tr>
+                ))}
+                {countyRows.length === 0 && (
+                  <tr><td colSpan={6} className="text-center py-4 text-gray-400">Loading counties...</td></tr>
+                )}
+              </tbody>
+            </table>
           </div>
-          <div className="bg-blue-50 rounded-lg p-3 text-center">
-            <p className="text-lg font-semibold text-blue-700">{formatNum(v1)}</p>
-            <p className="text-xs text-gray-500">{cat1}</p>
-          </div>
-          <div className="bg-red-50 rounded-lg p-3 text-center">
-            <p className="text-lg font-semibold text-red-700">{formatNum(v2)}</p>
-            <p className="text-xs text-gray-500">{cat2}</p>
-          </div>
-        </div>
-
-        {/* Penetration bar */}
-        <div>
-          <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-            <span>{cat1} Penetration</span>
-            <span className="font-medium">{pct1}%</span>
-          </div>
-          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${pct1}%` }} />
-          </div>
-        </div>
-
-        {/* County List */}
-        <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">
-            Counties ({countyRows.length})
-          </p>
-          <div className="max-h-[360px] overflow-y-auto space-y-1.5 pr-1">
-            {countyRows.map(row => (
-              <div key={row.county} className="flex items-center justify-between p-2.5 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{row.county}</p>
-                  <p className="text-xs text-gray-400">{formatNum(row.total)} total</p>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-blue-600">{row.pct1}%</p>
-                    <p className="text-xs text-gray-400">{cat1}</p>
-                  </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
-                </div>
-              </div>
-            ))}
-            {countyRows.length === 0 && (
-              <p className="text-xs text-gray-400 text-center py-4">Loading counties...</p>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   )
 }

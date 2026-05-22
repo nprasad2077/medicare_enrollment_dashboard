@@ -1,10 +1,21 @@
 import { useState, useEffect } from 'react'
-import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet'
+import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet'
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card'
 import { Map } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
 
 const STATE_GEO_URL = 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json'
+const COUNTY_GEO_URL = 'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json'
+
+// State FIPS lookup for filtering county GeoJSON
+const STATE_FIPS = {
+  AL:'01',AK:'02',AZ:'04',AR:'05',CA:'06',CO:'08',CT:'09',DE:'10',DC:'11',FL:'12',
+  GA:'13',HI:'15',ID:'16',IL:'17',IN:'18',IA:'19',KS:'20',KY:'21',LA:'22',ME:'23',
+  MD:'24',MA:'25',MI:'26',MN:'27',MS:'28',MO:'29',MT:'30',NE:'31',NV:'32',NH:'33',
+  NJ:'34',NM:'35',NY:'36',NC:'37',ND:'38',OH:'39',OK:'40',OR:'41',PA:'42',RI:'44',
+  SC:'45',SD:'46',TN:'47',TX:'48',UT:'49',VT:'50',VA:'51',WA:'53',WV:'54',WI:'55',
+  WY:'56',AS:'60',GU:'66',MP:'69',PR:'72',VI:'78'
+}
 
 function getPenetrationColor(pct, view) {
   if (view === 'medical') {
@@ -40,20 +51,63 @@ function getLegendItems(view) {
   ]
 }
 
-export default function MapPanel({ view, stateData, selectedState, onStateClick }) {
-  const [geoData, setGeoData] = useState(null)
+// Component to handle map zoom/pan when state is selected or deselected
+function ZoomToCounty({ countyGeoData, selectedState }) {
+  const map = useMap()
+  useEffect(() => {
+    if (!selectedState) {
+      map.setView([39.8, -98.5], 4)
+      return
+    }
+    if (countyGeoData && countyGeoData.features.length > 0) {
+      const layer = window.L.geoJSON(countyGeoData)
+      const bounds = layer.getBounds()
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [20, 20] })
+      }
+    }
+  }, [selectedState, countyGeoData, map])
+  return null
+}
+
+export default function MapPanel({ view, stateData, countyData, selectedState, selectedCounty, onStateClick, onCountyClick }) {
+  const [stateGeoData, setStateGeoData] = useState(null)
+  const [allCountyGeo, setAllCountyGeo] = useState(null)
 
   useEffect(() => {
-    fetch(STATE_GEO_URL).then(r => r.json()).then(setGeoData).catch(console.error)
+    fetch(STATE_GEO_URL).then(r => r.json()).then(setStateGeoData).catch(console.error)
   }, [])
+
+  // Load county GeoJSON when a state is selected
+  useEffect(() => {
+    if (selectedState && !allCountyGeo) {
+      fetch(COUNTY_GEO_URL).then(r => r.json()).then(setAllCountyGeo).catch(console.error)
+    }
+  }, [selectedState, allCountyGeo])
 
   const isMedical = view === 'medical'
   const pctKey = isMedical ? 'MA' : 'MAPD'
+  const pctKey2 = isMedical ? 'FFS' : 'PDP'
 
   const stateMap = {}
   stateData?.forEach(s => { stateMap[s.name] = s })
 
-  function style(feature) {
+  // Filter county GeoJSON for selected state
+  const countyGeoFiltered = (() => {
+    if (!selectedState || !allCountyGeo) return null
+    const fips = STATE_FIPS[selectedState]
+    if (!fips) return null
+    return {
+      type: 'FeatureCollection',
+      features: allCountyGeo.features.filter(f => f.properties.STATE === fips || f.id?.startsWith(fips))
+    }
+  })()
+
+  // Build county data lookup by FIPS
+  const countyMap = {}
+  countyData?.forEach(c => { countyMap[c.fips] = c })
+
+  function stateStyle(feature) {
     const st = stateMap[feature.properties.name]
     const total = st ? Number(st.TOTAL) : 0
     const val = st ? Number(st[pctKey]) : 0
@@ -68,7 +122,7 @@ export default function MapPanel({ view, stateData, selectedState, onStateClick 
     }
   }
 
-  function onEachFeature(feature, layer) {
+  function onEachState(feature, layer) {
     const st = stateMap[feature.properties.name]
     if (st) {
       const total = Number(st.TOTAL)
@@ -86,13 +140,63 @@ export default function MapPanel({ view, stateData, selectedState, onStateClick 
     }
   }
 
+  function countyStyle(feature) {
+    const fips = feature.id || feature.properties.GEO_ID?.slice(-5)
+    const c = countyMap[fips]
+    const total = c ? Number(c.TOTAL) : 0
+    const val = c ? Number(c[pctKey]) : 0
+    const pct = total ? (val / total) * 100 : 0
+    const isSelected = c && c.county === selectedCounty
+    return {
+      fillColor: getPenetrationColor(pct, view),
+      weight: isSelected ? 3 : 1,
+      opacity: 1,
+      color: isSelected ? '#171717' : '#ffffff',
+      fillOpacity: 0.85
+    }
+  }
+
+  function onEachCounty(feature, layer) {
+    const fips = feature.id || feature.properties.GEO_ID?.slice(-5)
+    const c = countyMap[fips]
+    if (c) {
+      const total = Number(c.TOTAL)
+      const v1 = Number(c[pctKey])
+      const v2 = Number(c[pctKey2])
+      const pct1 = total ? Math.round((v1 / total) * 100) : 0
+      const pct2 = total ? Math.round((v2 / total) * 100) : 0
+      const stateName = stateData?.find(s => s.state === selectedState)?.name || selectedState
+      layer.bindTooltip(
+        `<div style="font-family:Inter,sans-serif;font-size:12px;padding:4px 8px">
+          <strong>${c.county}</strong><br/>
+          State: ${stateName}<br/>
+          ${pctKey}: ${pct1}% · ${v1.toLocaleString()}<br/>
+          ${pctKey2}: ${pct2}% · ${v2.toLocaleString()}<br/>
+          TOTAL: ${total.toLocaleString()}
+        </div>`,
+        { sticky: true }
+      )
+      layer.on('click', () => onCountyClick(c.county))
+    }
+  }
+
+  const showCountyMap = selectedState && countyGeoFiltered && countyGeoFiltered.features.length > 0
+
+  const stateName = stateData?.find(s => s.state === selectedState)?.name
+  const mapTitle = showCountyMap
+    ? `${isMedical ? 'Medicare Advantage (MA) & Other Health Plans' : 'Medicare Advantage Prescription Drug Plans (MAPD)'} Penetration Rate`
+    : (isMedical ? 'Medicare Advantage Penetration by State' : 'MAPD Penetration by State')
+
   return (
     <Card className="border border-gray-200">
       <CardHeader className="pb-4 border-b border-gray-100">
         <CardTitle className="flex items-center gap-3 text-gray-900">
           <Map className="w-5 h-5 text-emerald-600" />
-          {isMedical ? 'Medicare Advantage Penetration by State' : 'MAPD Penetration by State'}
+          {showCountyMap ? stateName : mapTitle}
         </CardTitle>
+        {showCountyMap && (
+          <p className="text-xs text-gray-500 mt-1">{mapTitle}</p>
+        )}
       </CardHeader>
       <CardContent className="pt-4">
         <div className="relative">
@@ -101,7 +205,29 @@ export default function MapPanel({ view, stateData, selectedState, onStateClick 
               url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
               attribution='&copy; OpenStreetMap, &copy; CARTO'
             />
-            {geoData && <GeoJSON key={`${view}-${selectedState}-${stateData?.length}`} data={geoData} style={style} onEachFeature={onEachFeature} />}
+            {showCountyMap ? (
+              <>
+                <ZoomToCounty countyGeoData={countyGeoFiltered} selectedState={selectedState} />
+                <GeoJSON
+                  key={`county-${view}-${selectedState}-${selectedCounty}-${countyData?.length}`}
+                  data={countyGeoFiltered}
+                  style={countyStyle}
+                  onEachFeature={onEachCounty}
+                />
+              </>
+            ) : (
+              <>
+                <ZoomToCounty countyGeoData={null} selectedState={null} />
+                {stateGeoData && (
+                  <GeoJSON
+                    key={`state-${view}-${selectedState}-${stateData?.length}`}
+                    data={stateGeoData}
+                    style={stateStyle}
+                    onEachFeature={onEachState}
+                  />
+                )}
+              </>
+            )}
           </MapContainer>
 
           {/* Legend */}
@@ -117,7 +243,9 @@ export default function MapPanel({ view, stateData, selectedState, onStateClick 
             </div>
           </div>
         </div>
-        <p className="text-xs text-gray-400 mt-3">Click a state to view detailed breakdown →</p>
+        <p className="text-xs text-gray-400 mt-3">
+          {showCountyMap ? 'Hover over a county for details. Click to view trends.' : 'Click a state to view detailed breakdown →'}
+        </p>
       </CardContent>
     </Card>
   )

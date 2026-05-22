@@ -15,6 +15,7 @@ const queryClient = new QueryClient({
 function Dashboard() {
   const [view, setView] = useState('medical')
   const [selectedState, setSelectedState] = useState(null)
+  const [selectedCounty, setSelectedCounty] = useState(null)
 
   const { data: summary, isLoading } = useQuery({
     queryKey: ['summary', view],
@@ -42,12 +43,30 @@ function Dashboard() {
     enabled: !!selectedState
   })
 
+  const { data: countyYearlyTrend } = useQuery({
+    queryKey: ['countyYearlyTrend', view, selectedState, selectedCounty],
+    queryFn: () => dataService.getCountyYearlyTrend(view, selectedState, selectedCounty),
+    enabled: !!selectedState && !!selectedCounty
+  })
+
+  const { data: countyMonthlyTrend } = useQuery({
+    queryKey: ['countyMonthlyTrend', view, selectedState, selectedCounty],
+    queryFn: () => dataService.getCountyMonthlyTrend(view, selectedState, selectedCounty),
+    enabled: !!selectedState && !!selectedCounty
+  })
+
   const handleStateClick = useCallback((stateAbbr) => {
     setSelectedState(stateAbbr)
+    setSelectedCounty(null)
+  }, [])
+
+  const handleCountyClick = useCallback((countyName) => {
+    setSelectedCounty(countyName)
   }, [])
 
   const handleBackToAll = useCallback(() => {
     setSelectedState(null)
+    setSelectedCounty(null)
   }, [])
 
   if (isLoading) {
@@ -63,6 +82,11 @@ function Dashboard() {
 
   const latestData = summary?.[0]
 
+  // Determine which trend data to show: county > state > national
+  const displayYearlyTrend = selectedCounty ? countyYearlyTrend : yearlyTrend
+  const displayMonthlyTrend = selectedCounty ? countyMonthlyTrend : monthlyTrend
+  const trendLabel = selectedCounty || (selectedState ? stateData?.find(s => s.state === selectedState)?.name : null)
+
   return (
     <div className="min-h-screen bg-background font-[var(--font-family)]">
       <div className="w-full max-w-[1400px] mx-auto p-6 space-y-6">
@@ -76,14 +100,19 @@ function Dashboard() {
             <MapPanel
               view={view}
               stateData={stateData}
+              countyData={countyData}
               selectedState={selectedState}
+              selectedCounty={selectedCounty}
               onStateClick={handleStateClick}
+              onCountyClick={handleCountyClick}
             />
             <TrendPanel
               view={view}
-              yearlyTrend={yearlyTrend}
-              monthlyTrend={monthlyTrend}
+              yearlyTrend={displayYearlyTrend}
+              monthlyTrend={displayMonthlyTrend}
               selectedState={selectedState}
+              selectedCounty={selectedCounty}
+              trendLabel={trendLabel}
             />
           </div>
 
@@ -94,6 +123,8 @@ function Dashboard() {
               state={selectedState}
               stateData={stateData}
               countyData={countyData}
+              selectedCounty={selectedCounty}
+              onCountyClick={handleCountyClick}
               yearlyTrend={yearlyTrend}
               onClose={handleBackToAll}
             />
