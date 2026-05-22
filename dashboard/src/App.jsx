@@ -37,19 +37,19 @@ function Dashboard() {
     queryFn: () => dataService.getStateData(view)
   })
 
-  const { data: countyData } = useQuery({
+  const { data: countyData, isLoading: countyLoading } = useQuery({
     queryKey: ['countyData', view, selectedState],
     queryFn: () => dataService.getCountyData(view, selectedState),
     enabled: !!selectedState
   })
 
-  const { data: countyYearlyTrend } = useQuery({
+  const { data: countyYearlyTrend, isLoading: countyYearlyLoading } = useQuery({
     queryKey: ['countyYearlyTrend', view, selectedState, selectedCounty],
     queryFn: () => dataService.getCountyYearlyTrend(view, selectedState, selectedCounty),
     enabled: !!selectedState && !!selectedCounty
   })
 
-  const { data: countyMonthlyTrend } = useQuery({
+  const { data: countyMonthlyTrend, isLoading: countyMonthlyLoading } = useQuery({
     queryKey: ['countyMonthlyTrend', view, selectedState, selectedCounty],
     queryFn: () => dataService.getCountyMonthlyTrend(view, selectedState, selectedCounty),
     enabled: !!selectedState && !!selectedCounty
@@ -113,6 +113,7 @@ function Dashboard() {
               selectedState={selectedState}
               selectedCounty={selectedCounty}
               trendLabel={trendLabel}
+              loading={selectedCounty ? (countyYearlyLoading || countyMonthlyLoading) : false}
             />
           </div>
 
@@ -123,6 +124,7 @@ function Dashboard() {
               state={selectedState}
               stateData={stateData}
               countyData={countyData}
+              countyLoading={countyLoading}
               selectedCounty={selectedCounty}
               onCountyClick={handleCountyClick}
               yearlyTrend={yearlyTrend}

@@ -10,7 +10,7 @@ function formatNum(n) {
   return n.toLocaleString()
 }
 
-export default function StateDetail({ view, state, stateData, countyData, selectedCounty, onCountyClick, yearlyTrend, onClose }) {
+export default function StateDetail({ view, state, stateData, countyData, countyLoading, selectedCounty, onCountyClick, yearlyTrend, onClose }) {
   const isMedical = view === 'medical'
   const cat1 = isMedical ? 'MA' : 'MAPD'
   const cat2 = isMedical ? 'FFS' : 'PDP'
@@ -31,7 +31,7 @@ export default function StateDetail({ view, state, stateData, countyData, select
         pct1: t ? Math.round((c1 / t) * 100) : 0,
         pct2: t ? Math.round((c2 / t) * 100) : 0
       }
-    }).sort((a, b) => b.total - a.total)
+    }).sort((a, b) => a.county.localeCompare(b.county))
   }, [countyData, cat1, cat2])
 
   // Top states for the overview bar chart
@@ -140,7 +140,16 @@ export default function StateDetail({ view, state, stateData, countyData, select
                   </tr>
                 ))}
                 {countyRows.length === 0 && (
-                  <tr><td colSpan={6} className="text-center py-4 text-gray-400">Loading counties...</td></tr>
+                  <tr><td colSpan={6} className="text-center py-8">
+                    {countyLoading ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-6 h-6 border-[3px] border-gray-200 border-t-blue-600 rounded-full animate-spin" />
+                        <span className="text-xs text-gray-500">Loading counties...</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-400">No county data available</span>
+                    )}
+                  </td></tr>
                 )}
               </tbody>
             </table>

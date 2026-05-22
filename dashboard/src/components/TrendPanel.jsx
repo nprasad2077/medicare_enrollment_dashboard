@@ -9,7 +9,7 @@ function formatAxis(val) {
   return val
 }
 
-export default function TrendPanel({ view, yearlyTrend, monthlyTrend, selectedState, selectedCounty, trendLabel }) {
+export default function TrendPanel({ view, yearlyTrend, monthlyTrend, selectedState, selectedCounty, trendLabel, loading }) {
   const [tab, setTab] = useState('yearly')
   const isMedical = view === 'medical'
   const cat1 = isMedical ? 'FFS' : 'PDP'
@@ -86,7 +86,15 @@ export default function TrendPanel({ view, yearlyTrend, monthlyTrend, selectedSt
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-6 space-y-6">
+      <CardContent className="pt-6 space-y-6 relative">
+        {loading && (
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-b-xl">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-[3px] border-gray-200 border-t-blue-600 rounded-full animate-spin" />
+              <p className="text-xs text-gray-500">Loading county data...</p>
+            </div>
+          </div>
+        )}
         {tab === 'grid' ? (
           <>
             {/* Yearly Grid */}
