@@ -10,7 +10,7 @@ function formatNum(n) {
   return n.toLocaleString()
 }
 
-export default function StateDetail({ view, state, stateData, countyData, countyLoading, selectedCounty, onCountyClick, yearlyTrend, onClose }) {
+export default function StateDetail({ view, state, stateData, countyData, countyLoading, selectedCounty, onStateClick, onCountyClick, yearlyTrend, onClose }) {
   const isMedical = view === 'medical'
   const cat1 = isMedical ? 'MA' : 'MAPD'
   const cat2 = isMedical ? 'FFS' : 'PDP'
@@ -38,7 +38,7 @@ export default function StateDetail({ view, state, stateData, countyData, county
   const topStates = useMemo(() => {
     if (!stateData) return []
     return stateData
-      .map(s => ({ name: s.state, total: Number(s.TOTAL) || 0 }))
+      .map(s => ({ state: s.state, name: s.name || s.state, total: Number(s.TOTAL) || 0 }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 10)
   }, [stateData])
@@ -54,19 +54,83 @@ export default function StateDetail({ view, state, stateData, countyData, county
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={topStates} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
+          <ResponsiveContainer width="100%" height={450}>
+            <BarChart
+              data={topStates}
+              layout="vertical"
+              margin={{ top: 0, right: 10, left: 0, bottom: 0 }}
+              onClick={(e) => {
+                const clicked = e?.activePayload?.[0]?.payload
+                if (clicked?.state && onStateClick) {
+                  onStateClick(clicked.state)
+                }
+              }}
+              style={{ cursor: 'pointer' }}
+            >
               <XAxis type="number" tick={{ fontSize: 10, fill: '#737373' }} tickFormatter={v => formatNum(v)} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#525252' }} width={35} axisLine={false} tickLine={false} />
-              <Tooltip formatter={(value) => [Number(value).toLocaleString(), 'Total Enrollment']} contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e5e5', borderRadius: '8px' }} />
-              <Bar dataKey="total" radius={[0, 4, 4, 0]}>
+              <YAxis
+                type="category"
+                dataKey="state"
+                tick={{ fontSize: 11, fill: '#374151', fontWeight: 600, cursor: 'pointer' }}
+                width={35}
+                axisLine={false}
+                tickLine={false}
+                onClick={(tickData) => {
+                  if (tickData?.value && onStateClick) {
+                    onStateClick(tickData.value)
+                  }
+                }}
+              />
+              <Tooltip
+                cursor={{ fill: 'rgba(238, 242, 255, 0.7)' }}
+                content={({ active, payload }) => {
+                  if (!active || !payload || !payload.length) return null
+                  const item = payload[0].payload
+                  const rank = topStates.findIndex(s => s.state === item.state) + 1
+                  return (
+                    <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg text-xs space-y-1.5 min-w-[200px]">
+                      <div className="flex items-center justify-between gap-2 border-b border-gray-100 pb-1.5">
+                        <span className="font-bold text-gray-900 text-sm">{item.name}</span>
+                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-blue-50 text-blue-700 rounded border border-blue-200">
+                          Rank #{rank}
+                        </span>
+                      </div>
+                      <div className="text-gray-600 flex justify-between items-center">
+                        <span>Total Enrollment:</span>
+                        <span className="font-semibold text-gray-900">{item.total.toLocaleString()}</span>
+                      </div>
+                      <div className="text-blue-600 font-medium pt-1.5 border-t border-gray-100 flex items-center justify-between">
+                        <span>Click to focus map</span>
+                        <span className="text-sm">→</span>
+                      </div>
+                    </div>
+                  )
+                }}
+              />
+              <Bar
+                dataKey="total"
+                radius={[0, 4, 4, 0]}
+                onClick={(data) => {
+                  if (data?.state && onStateClick) {
+                    onStateClick(data.state)
+                  }
+                }}
+                className="cursor-pointer"
+              >
                 {topStates.map((entry, i) => (
-                  <Cell key={entry.name} fill={i === 0 ? '#0ea5e9' : i < 3 ? '#38bdf8' : '#bae6fd'} />
+                  <Cell
+                    key={entry.state}
+                    fill={i === 0 ? '#0ea5e9' : i < 3 ? '#38bdf8' : '#bae6fd'}
+                    className="cursor-pointer transition-all duration-150 hover:opacity-80"
+                  />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          <p className="text-xs text-gray-400 mt-3">Select a state on the map for detailed breakdown</p>
+          <p className="text-xs text-gray-500 mt-3 flex items-center gap-1.5">
+            <span className="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+            <span>Click any state bar to zoom in & view county breakdown</span>
+          </p>
         </CardContent>
       </Card>
     )

@@ -63,10 +63,10 @@ export default function SummaryMetrics({ data, view }) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">{m.label}</p>
-                <p className="text-2xl font-semibold text-gray-900 mt-1">{m.value}</p>
+                <p className="text-3xl font-bold text-gray-900 mt-1 tracking-tight">{m.value}</p>
                 <p className="text-xs text-gray-400 mt-0.5">{m.sub}</p>
               </div>
-              <div className={`w-10 h-10 ${m.iconBg} rounded-lg flex items-center justify-center`}>
+              <div className={`w-11 h-11 ${m.iconBg} rounded-xl flex items-center justify-center shrink-0`}>
                 <m.icon className={`w-5 h-5 ${m.iconColor}`} />
               </div>
             </div>

@@ -143,7 +143,8 @@ vite.config.ts.timestamp-*
 .vite/
 
 
-data/
+/data/
+!dashboard/src/data/
 
 docs\prompts
 docs/prompts
@@ -158,3 +159,5 @@ docs/kiro-session.md
 docs/chat.json
 
 data/Medicare Monthly Enrollment/2026-05/update dashboard
+.DS_Store
+dashboard/.env.example

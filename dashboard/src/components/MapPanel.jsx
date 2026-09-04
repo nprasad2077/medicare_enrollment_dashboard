@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet'
+import L from 'leaflet'
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card'
 import { Map } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
+import usStatesGeo from '../data/us-states.json'
 
-const STATE_GEO_URL = 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json'
-const COUNTY_GEO_URL = 'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json'
+const CARTO_KEY = import.meta.env.VITE_CARTO_API_KEY || 'cb1_2w4o_1_6bd6c688e65b4ef542c5d58a';
+const TILE_URL = `https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`;
 
 // State FIPS lookup for filtering county GeoJSON
 const STATE_FIPS = {
@@ -16,6 +18,8 @@ const STATE_FIPS = {
   SC:'45',SD:'46',TN:'47',TX:'48',UT:'49',VT:'50',VA:'51',WA:'53',WV:'54',WI:'55',
   WY:'56',AS:'60',GU:'66',MP:'69',PR:'72',VI:'78'
 }
+
+const countyLoaders = import.meta.glob('../data/counties/*.json');
 
 function getPenetrationColor(pct, view) {
   if (view === 'medical') {
@@ -59,8 +63,8 @@ function ZoomToCounty({ countyGeoData, selectedState }) {
       map.setView([39.8, -98.5], 4)
       return
     }
-    if (countyGeoData && countyGeoData.features.length > 0) {
-      const layer = window.L.geoJSON(countyGeoData)
+    if (countyGeoData && countyGeoData.features && countyGeoData.features.length > 0) {
+      const layer = L.geoJSON(countyGeoData)
       const bounds = layer.getBounds()
       if (bounds.isValid()) {
         map.fitBounds(bounds, { padding: [20, 20] })
@@ -71,19 +75,28 @@ function ZoomToCounty({ countyGeoData, selectedState }) {
 }
 
 export default function MapPanel({ view, stateData, countyData, selectedState, selectedCounty, onStateClick, onCountyClick }) {
-  const [stateGeoData, setStateGeoData] = useState(null)
-  const [allCountyGeo, setAllCountyGeo] = useState(null)
+  const [countyGeo, setCountyGeo] = useState(null)
 
+  // Load state county GeoJSON locally when a state is selected
   useEffect(() => {
-    fetch(STATE_GEO_URL).then(r => r.json()).then(setStateGeoData).catch(console.error)
-  }, [])
-
-  // Load county GeoJSON when a state is selected
-  useEffect(() => {
-    if (selectedState && !allCountyGeo) {
-      fetch(COUNTY_GEO_URL).then(r => r.json()).then(setAllCountyGeo).catch(console.error)
+    if (!selectedState) {
+      setCountyGeo(null)
+      return
     }
-  }, [selectedState, allCountyGeo])
+    const fips = STATE_FIPS[selectedState]
+    if (!fips) {
+      setCountyGeo(null)
+      return
+    }
+    const loader = countyLoaders[`../data/counties/${fips}.json`]
+    if (loader) {
+      loader().then(mod => {
+        setCountyGeo(mod.default || mod)
+      }).catch(console.error)
+    } else {
+      setCountyGeo(null)
+    }
+  }, [selectedState])
 
   const isMedical = view === 'medical'
   const pctKey = isMedical ? 'MA' : 'MAPD'
@@ -92,16 +105,7 @@ export default function MapPanel({ view, stateData, countyData, selectedState, s
   const stateMap = {}
   stateData?.forEach(s => { stateMap[s.name] = s })
 
-  // Filter county GeoJSON for selected state
-  const countyGeoFiltered = (() => {
-    if (!selectedState || !allCountyGeo) return null
-    const fips = STATE_FIPS[selectedState]
-    if (!fips) return null
-    return {
-      type: 'FeatureCollection',
-      features: allCountyGeo.features.filter(f => f.properties.STATE === fips || f.id?.startsWith(fips))
-    }
-  })()
+  const countyGeoFiltered = countyGeo
 
   // Build county data lookup by FIPS
   const countyMap = {}
@@ -200,10 +204,10 @@ export default function MapPanel({ view, stateData, countyData, selectedState, s
       </CardHeader>
       <CardContent className="pt-4">
         <div className="relative">
-          <MapContainer center={[39.8, -98.5]} zoom={4} style={{ height: 380, width: '100%', borderRadius: 8 }} scrollWheelZoom={true}>
+          <MapContainer center={[39.8, -98.5]} zoom={4} style={{ height: 440, width: '100%', borderRadius: 8 }} scrollWheelZoom={true}>
             <TileLayer
-              url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
-              attribution='&copy; OpenStreetMap, &copy; CARTO'
+              url={TILE_URL}
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a>'
             />
             {showCountyMap ? (
               <>
@@ -218,14 +222,12 @@ export default function MapPanel({ view, stateData, countyData, selectedState, s
             ) : (
               <>
                 <ZoomToCounty countyGeoData={null} selectedState={null} />
-                {stateGeoData && (
-                  <GeoJSON
-                    key={`state-${view}-${selectedState}-${stateData?.length}`}
-                    data={stateGeoData}
-                    style={stateStyle}
-                    onEachFeature={onEachState}
-                  />
-                )}
+                <GeoJSON
+                  key={`state-${view}-${selectedState}-${stateData?.length}`}
+                  data={usStatesGeo}
+                  style={stateStyle}
+                  onEachFeature={onEachState}
+                />
               </>
             )}
           </MapContainer>
