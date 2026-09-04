@@ -72,12 +72,37 @@ function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-4 border-gray-200 border-t-gray-600 rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">Loading Medicare Enrollment Data...</p>
+      <main className="min-h-screen bg-background font-[var(--font-family)]" aria-busy="true" aria-label="Loading Medicare Enrollment Dashboard">
+        <div className="w-full max-w-[1560px] mx-auto p-6 lg:p-8 space-y-6 lg:space-y-8 animate-pulse">
+          {/* Header Skeleton */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gray-200 rounded-xl" />
+              <div className="space-y-2">
+                <div className="w-64 h-7 bg-gray-200 rounded" />
+                <div className="w-40 h-4 bg-gray-200 rounded" />
+              </div>
+            </div>
+            <div className="w-64 h-10 bg-gray-100 rounded-lg" />
+          </div>
+
+          {/* Metrics Skeleton */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-28 bg-white border border-gray-200 rounded-xl p-5" />
+            ))}
+          </div>
+
+          {/* Main Grid Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="h-[480px] bg-white border border-gray-200 rounded-xl" />
+              <div className="h-[360px] bg-white border border-gray-200 rounded-xl" />
+            </div>
+            <div className="h-[520px] bg-white border border-gray-200 rounded-xl" />
+          </div>
         </div>
-      </div>
+      </main>
     )
   }
 
@@ -89,7 +114,7 @@ function Dashboard() {
   const trendLabel = selectedCounty || (selectedState ? stateData?.find(s => s.state === selectedState)?.name : null)
 
   return (
-    <div className="min-h-screen bg-background font-[var(--font-family)]">
+    <main className="min-h-screen bg-background font-[var(--font-family)]">
       <div className="w-full max-w-[1560px] mx-auto p-6 lg:p-8 space-y-6 lg:space-y-8">
         <Header view={view} setView={setView} latestData={latestData} onReset={handleBackToAll} />
         <SummaryMetrics data={latestData} view={view} />
@@ -135,7 +160,7 @@ function Dashboard() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   )
 }
 

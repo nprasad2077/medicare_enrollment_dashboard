@@ -180,12 +180,12 @@ export default function StateDetail({ view, state, stateData, countyData, county
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-gray-50 z-10">
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-2 px-3 font-medium text-gray-600">County</th>
-                  <th className="text-right py-2 px-3 font-medium text-gray-600">TOTAL</th>
-                  <th className="text-right py-2 px-3 font-medium text-gray-600">{cat2}</th>
-                  <th className="text-right py-2 px-3 font-medium text-gray-600">{cat1}</th>
-                  <th className="text-right py-2 px-3 font-medium text-gray-600">{cat2}%</th>
-                  <th className="text-right py-2 px-3 font-medium text-gray-600">{cat1}%</th>
+                  <th className="text-left py-2 px-3 font-semibold text-gray-700">County</th>
+                  <th className="text-right py-2 px-3 font-semibold text-gray-700">TOTAL</th>
+                  <th className="text-right py-2 px-3 font-semibold text-gray-700">{cat2}</th>
+                  <th className="text-right py-2 px-3 font-semibold text-gray-700">{cat1}</th>
+                  <th className="text-right py-2 px-3 font-semibold text-gray-700">{cat2}%</th>
+                  <th className="text-right py-2 px-3 font-semibold text-gray-700">{cat1}%</th>
                 </tr>
               </thead>
               <tbody>
@@ -210,10 +210,10 @@ export default function StateDetail({ view, state, stateData, countyData, county
                     {countyLoading ? (
                       <div className="flex flex-col items-center gap-2">
                         <div className="w-6 h-6 border-[3px] border-gray-200 border-t-blue-600 rounded-full animate-spin" />
-                        <span className="text-xs text-gray-500">Loading counties...</span>
+                        <span className="text-xs text-gray-600">Loading counties...</span>
                       </div>
                     ) : (
-                      <span className="text-xs text-gray-400">No county data available</span>
+                      <span className="text-xs text-gray-600">No county data available</span>
                     )}
                   </td></tr>
                 )}

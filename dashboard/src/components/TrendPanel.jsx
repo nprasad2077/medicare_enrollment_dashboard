@@ -178,7 +178,7 @@ export default function TrendPanel({ view, yearlyTrend, monthlyTrend, selectedSt
             <button
               onClick={() => setTab('yearly')}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                tab === 'yearly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                tab === 'yearly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-700 hover:text-gray-900'
               }`}
             >
               Yearly Trend
@@ -186,7 +186,7 @@ export default function TrendPanel({ view, yearlyTrend, monthlyTrend, selectedSt
             <button
               onClick={() => setTab('monthly')}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                tab === 'monthly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                tab === 'monthly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-700 hover:text-gray-900'
               }`}
             >
               12-Month Trend
@@ -195,7 +195,7 @@ export default function TrendPanel({ view, yearlyTrend, monthlyTrend, selectedSt
               <button
                 onClick={() => setTab('grid')}
                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  tab === 'grid' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  tab === 'grid' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-700 hover:text-gray-900'
                 }`}
               >
                 Grid
