@@ -1,16 +1,21 @@
 import { Stethoscope, Pill } from 'lucide-react'
 
-export default function Header({ view, setView, latestData }) {
+export default function Header({ view, setView, latestData, onReset }) {
   const period = latestData ? `${latestData.MONTH} ${latestData.YEAR}` : ''
 
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/25 ring-1 ring-white/20 p-2.5 shrink-0">
+        <button
+          type="button"
+          onClick={onReset}
+          title="Reset to National Overview"
+          className="w-12 h-12 bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/25 ring-1 ring-white/20 p-2.5 shrink-0 hover:scale-105 active:scale-95 transition-transform cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 640 640"
-            className="w-full h-full drop-shadow-sm"
+            className="w-full h-full drop-shadow-sm pointer-events-none"
             aria-hidden="true"
           >
             <defs>
@@ -34,11 +39,17 @@ export default function Header({ view, setView, latestData }) {
               d="M288 312L288 352L248 352C239.2 352 232 359.2 232 368L232 400C232 408.8 239.2 416 248 416L288 416L288 456C288 464.8 295.2 472 304 472L336 472C344.8 472 352 464.8 352 456L352 416L392 416C400.8 416 408 408.8 408 400L408 368C408 359.2 400.8 352 392 352L352 352L352 312C352 303.2 344.8 296 336 296L304 296C295.2 296 288 303.2 288 312z"
             />
           </svg>
-        </div>
+        </button>
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">
-            Medicare Enrollment Dashboard
-          </h1>
+          <button
+            type="button"
+            onClick={onReset}
+            className="text-left cursor-pointer group"
+          >
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight group-hover:text-blue-600 transition-colors">
+              Medicare Enrollment Dashboard
+            </h1>
+          </button>
           <p className="text-gray-500 text-sm">
             CMS Monthly Enrollment Data {period && `· ${period}`}
           </p>

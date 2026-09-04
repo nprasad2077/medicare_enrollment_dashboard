@@ -91,7 +91,7 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-background font-[var(--font-family)]">
       <div className="w-full max-w-[1560px] mx-auto p-6 lg:p-8 space-y-6 lg:space-y-8">
-        <Header view={view} setView={setView} latestData={latestData} />
+        <Header view={view} setView={setView} latestData={latestData} onReset={handleBackToAll} />
         <SummaryMetrics data={latestData} view={view} />
 
         {/* Main Content Grid */}
