@@ -4,9 +4,12 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { TrendingUp } from 'lucide-react'
 
 function formatAxis(val) {
-  if (val >= 1e6) return (val / 1e6).toFixed(1) + 'M'
-  if (val >= 1e3) return (val / 1e3).toFixed(0) + 'K'
-  return val
+  if (val === null || val === undefined) return '0'
+  const numVal = Number(val)
+  if (isNaN(numVal)) return String(val)
+  if (numVal >= 1e6) return (numVal / 1e6).toFixed(1) + 'M'
+  if (numVal >= 1e3) return (numVal / 1e3).toFixed(0) + 'K'
+  return numVal.toLocaleString()
 }
 
 function CustomTooltip({ active, payload, label, tab, cat1, cat2, color1, color2, areaLabel }) {
@@ -15,11 +18,16 @@ function CustomTooltip({ active, payload, label, tab, cat1, cat2, color1, color2
   if (!data) return null
 
   const formatDelta = (delta, pct) => {
-    if (delta === null || delta === undefined || isNaN(delta)) {
+    if (delta === null || delta === undefined || pct === null || pct === undefined) {
       return <span className="text-gray-400 text-[11px]">—</span>
     }
-    const isUp = delta > 0
-    const isZero = delta === 0
+    const numDelta = Number(delta)
+    const numPct = Number(pct)
+    if (isNaN(numDelta) || isNaN(numPct)) {
+      return <span className="text-gray-400 text-[11px]">—</span>
+    }
+    const isUp = numDelta > 0
+    const isZero = numDelta === 0
     const sign = isUp ? '+' : ''
     const arrow = isUp ? '▲' : isZero ? '●' : '▼'
     const colorClass = isUp
@@ -30,8 +38,8 @@ function CustomTooltip({ active, payload, label, tab, cat1, cat2, color1, color2
     return (
       <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold font-mono ${colorClass}`}>
         <span>{arrow}</span>
-        <span>{sign}{Math.abs(delta) >= 1e6 ? `${(delta / 1e6).toFixed(2)}M` : delta.toLocaleString()}</span>
-        <span className="opacity-85 font-sans font-bold">({sign}{pct.toFixed(2)}%)</span>
+        <span>{sign}{Math.abs(numDelta) >= 1e6 ? `${(numDelta / 1e6).toFixed(2)}M` : numDelta.toLocaleString()}</span>
+        <span className="opacity-85 font-sans font-bold">({sign}{numPct.toFixed(2)}%)</span>
       </span>
     )
   }

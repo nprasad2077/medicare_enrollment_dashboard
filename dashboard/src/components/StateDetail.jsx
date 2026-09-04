@@ -4,10 +4,12 @@ import { MapPin, X, BarChart3 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
 function formatNum(n) {
-  if (!n) return '0'
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M'
-  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K'
-  return n.toLocaleString()
+  if (n === null || n === undefined) return '0'
+  const numVal = Number(n)
+  if (isNaN(numVal)) return '0'
+  if (numVal >= 1e6) return (numVal / 1e6).toFixed(1) + 'M'
+  if (numVal >= 1e3) return (numVal / 1e3).toFixed(0) + 'K'
+  return numVal.toLocaleString()
 }
 
 export default function StateDetail({ view, state, stateData, countyData, countyLoading, selectedCounty, onStateClick, onCountyClick, yearlyTrend, onClose }) {

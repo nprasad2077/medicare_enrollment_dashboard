@@ -7,6 +7,7 @@ import SummaryMetrics from './components/SummaryMetrics'
 import TrendPanel from './components/TrendPanel'
 import MapPanel from './components/MapPanel'
 import StateDetail from './components/StateDetail'
+import ErrorBoundary from './components/ErrorBoundary'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 5 * 60 * 1000, retry: 1 } }
@@ -140,9 +141,12 @@ function Dashboard() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Dashboard />
-      <Analytics />
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <Dashboard />
+        <Analytics />
+      </QueryClientProvider>
+    </ErrorBoundary>
   )
 }
+

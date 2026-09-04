@@ -2,10 +2,12 @@ import { Card, CardContent } from './ui/card'
 import { Users, TrendingUp, PieChart, Activity } from 'lucide-react'
 
 function formatNum(n) {
-  if (!n) return '0'
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M'
-  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K'
-  return n.toLocaleString()
+  if (n === null || n === undefined) return '0'
+  const numVal = Number(n)
+  if (isNaN(numVal)) return '0'
+  if (numVal >= 1e6) return (numVal / 1e6).toFixed(1) + 'M'
+  if (numVal >= 1e3) return (numVal / 1e3).toFixed(0) + 'K'
+  return numVal.toLocaleString()
 }
 
 export default function SummaryMetrics({ data, view }) {
